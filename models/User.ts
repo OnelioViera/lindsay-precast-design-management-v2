@@ -50,8 +50,7 @@ const UserSchema = new Schema({
   timestamps: true,
 });
 
-// Index
-UserSchema.index({ email: 1 });
+// Index for createdAt for sorting
 UserSchema.index({ createdAt: 1 });
 
 const User = models.User || model('User', UserSchema);

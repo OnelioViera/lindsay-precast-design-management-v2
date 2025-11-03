@@ -120,8 +120,7 @@ const ProjectSchema = new Schema({
   timestamps: true,
 });
 
-// Indexes
-ProjectSchema.index({ projectNumber: 1 });
+// Indexes (note: projectNumber is already indexed by unique: true)
 ProjectSchema.index({ customerId: 1 });
 ProjectSchema.index({ status: 1 });
 ProjectSchema.index({ createdAt: -1 });

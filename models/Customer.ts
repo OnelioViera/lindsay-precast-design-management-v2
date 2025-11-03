@@ -48,9 +48,8 @@ const CustomerSchema = new Schema({
   timestamps: true,
 });
 
-// Indexes
+// Indexes (note: email is already indexed by unique: true)
 CustomerSchema.index({ name: 1 });
-CustomerSchema.index({ 'contactInfo.email': 1 });
 CustomerSchema.index({ createdAt: -1 });
 
 const Customer = models.Customer || model('Customer', CustomerSchema);
