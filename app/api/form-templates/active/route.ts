@@ -3,6 +3,9 @@ import { auth } from '@/lib/auth';
 import { connectDB } from '@/lib/db';
 import FormTemplate from '@/models/FormTemplate';
 
+// Mark this route as dynamic since it requires authentication
+export const dynamic = 'force-dynamic';
+
 // GET /api/form-templates/active?type=customer
 export async function GET(req: NextRequest) {
   try {
