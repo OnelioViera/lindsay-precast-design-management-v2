@@ -50,7 +50,7 @@ export async function PATCH(
 ) {
   try {
     const session = await auth();
-    if (!session || !['engineer', 'manager'].includes((session.user as any).role)) {
+    if (!session || !['engineer', 'manager', 'admin'].includes((session.user as any).role)) {
       return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
     }
 
@@ -91,7 +91,7 @@ export async function DELETE(
 ) {
   try {
     const session = await auth();
-    if (!session || !['engineer', 'manager'].includes((session.user as any).role)) {
+    if (!session || !['engineer', 'manager', 'admin'].includes((session.user as any).role)) {
       return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
     }
 

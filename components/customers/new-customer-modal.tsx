@@ -1,11 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { X } from 'lucide-react';
+import { DynamicFormRenderer, FormField } from '@/components/forms/dynamic-form-renderer';
+import { useToast } from '@/lib/toast-context';
 
 interface NewCustomerModalProps {
   isOpen: boolean;
@@ -15,70 +15,155 @@ interface NewCustomerModalProps {
 
 export function NewCustomerModal({ isOpen, onClose, onSuccess }: NewCustomerModalProps) {
   const [loading, setLoading] = useState(false);
+  const [formLoading, setFormLoading] = useState(true);
   const [error, setError] = useState('');
   const [showClearConfirm, setShowClearConfirm] = useState(false);
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    address: '',
-    city: '',
-    state: '',
-    zipCode: '',
-  });
+  const { addToast } = useToast();
+
+  const [formTemplate, setFormTemplate] = useState<{
+    fields: FormField[];
+    name: string;
+  } | null>(null);
+
+  const [formData, setFormData] = useState<Record<string, any>>({});
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  // Load the active customer form template
+  useEffect(() => {
+    if (isOpen) {
+      fetchFormTemplate();
+    }
+  }, [isOpen]);
+
+  const fetchFormTemplate = async () => {
+    setFormLoading(true);
+    try {
+      const res = await fetch('/api/form-templates/active?type=customer');
+      const data = await res.json();
+
+      if (data.success) {
+        setFormTemplate(data.data);
+        // Initialize form data with empty values for all fields
+        const initialData: Record<string, any> = {};
+        data.data.fields.forEach((field: FormField) => {
+          initialData[field.name] = '';
+        });
+        setFormData(initialData);
+      } else {
+        addToast({
+          title: 'Error',
+          message: 'Failed to load customer form',
+          type: 'error',
+        });
+      }
+    } catch (error) {
+      console.error('Failed to fetch form template:', error);
+      addToast({
+        title: 'Error',
+        message: 'Failed to load customer form',
+        type: 'error',
+      });
+    } finally {
+      setFormLoading(false);
+    }
+  };
+
+  const handleFieldChange = (fieldName: string, value: any) => {
+    setFormData({ ...formData, [fieldName]: value });
+    if (fieldErrors[fieldName]) {
+      setFieldErrors({ ...fieldErrors, [fieldName]: '' });
+    }
+  };
+
+  const validateForm = (): boolean => {
+    const errors: Record<string, string> = {};
+
+    if (formTemplate) {
+      formTemplate.fields.forEach((field) => {
+        if (field.required && !formData[field.name]) {
+          errors[field.name] = `${field.label} is required`;
+        }
+
+        // Email validation
+        if (field.type === 'email' && formData[field.name]) {
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          if (!emailRegex.test(formData[field.name])) {
+            errors[field.name] = 'Invalid email address';
+          }
+        }
+
+        // Phone validation
+        if (field.type === 'tel' && formData[field.name]) {
+          const phoneDigits = formData[field.name].replace(/\D/g, '');
+          if (phoneDigits.length !== 10) {
+            errors[field.name] = 'Phone number must be 10 digits';
+          }
+        }
+      });
+    }
+
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!validateForm()) {
+      addToast({
+        title: 'Validation Error',
+        message: 'Please fix the errors above',
+        type: 'error',
+      });
+      return;
+    }
+
     setLoading(true);
     setError('');
 
-    // Format phone number to (xxx) xxx-xxxx
-    const formatPhoneNumber = (phone: string) => {
-      const digits = phone.replace(/\D/g, '');
-      if (digits.length !== 10) {
-        setError('Phone number must be 10 digits');
-        setLoading(false);
-        return null;
-      }
-      return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
-    };
-
-    const formattedPhone = formatPhoneNumber(formData.phone);
-    if (!formattedPhone) return;
-
     try {
+      // Format phone number if present
+      const submitData = { ...formData };
+      if (submitData.phone) {
+        const digits = submitData.phone.replace(/\D/g, '');
+        submitData.phone = `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+      }
+
+      // Map dynamic form data to customer model structure
+      const customerPayload = {
+        name: submitData.name,
+        contactInfo: {
+          email: submitData.email,
+          phone: submitData.phone,
+          address: {
+            street: submitData.street || undefined,
+            city: submitData.city || undefined,
+            state: submitData.state ? submitData.state.toUpperCase().slice(0, 2) : undefined,
+            zipCode: submitData.zipCode || undefined,
+          },
+        },
+        // Store all dynamic form data for future reference
+        dynamicFormData: submitData,
+      };
+
       const res = await fetch('/api/customers', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: formData.name,
-          contactInfo: {
-            email: formData.email,
-            phone: formattedPhone,
-            address: {
-              street: formData.address || undefined,
-              city: formData.city || undefined,
-              state: formData.state ? formData.state.toUpperCase().slice(0, 2) : undefined,
-              zipCode: formData.zipCode || undefined,
-            },
-          },
-        }),
+        body: JSON.stringify(customerPayload),
       });
 
       const data = await res.json();
 
       if (res.ok) {
-        setFormData({
-          name: '',
-          email: '',
-          phone: '',
-          address: '',
-          city: '',
-          state: '',
-          zipCode: '',
-        });
+        setFormData({});
+        setFieldErrors({});
         onSuccess();
         onClose();
+        addToast({
+          title: 'Success',
+          message: 'Customer created successfully',
+          type: 'success',
+        });
       } else {
         setError(data.message || 'Failed to create customer');
       }
@@ -94,15 +179,8 @@ export function NewCustomerModal({ isOpen, onClose, onSuccess }: NewCustomerModa
   };
 
   const confirmClearData = () => {
-    setFormData({
-      name: '',
-      email: '',
-      phone: '',
-      address: '',
-      city: '',
-      state: '',
-      zipCode: '',
-    });
+    setFormData({});
+    setFieldErrors({});
     setError('');
     setShowClearConfirm(false);
   };
@@ -115,7 +193,9 @@ export function NewCustomerModal({ isOpen, onClose, onSuccess }: NewCustomerModa
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b sticky top-0 bg-white">
           <div>
-            <h2 className="text-2xl font-bold text-gray-800">Create New Customer</h2>
+            <h2 className="text-2xl font-bold text-gray-800">
+              {formTemplate?.name || 'Create New Customer'}
+            </h2>
             <p className="text-sm text-gray-600 mt-1">Add a new customer to your system</p>
           </div>
           <button
@@ -128,140 +208,72 @@ export function NewCustomerModal({ isOpen, onClose, onSuccess }: NewCustomerModa
 
         {/* Content */}
         <div className="p-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Customer Information</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Basic Info */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <Label htmlFor="name">Company Name *</Label>
-                    <Input
-                      id="name"
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      placeholder="Enter company name"
-                      required
-                      className="mt-2"
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="email">Email *</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      placeholder="Enter email address"
-                      required
-                      className="mt-2"
-                    />
-                  </div>
-                </div>
-
-                {/* Phone */}
-                <div>
-                  <Label htmlFor="phone">Phone *</Label>
-                  <Input
-                    id="phone"
-                    type="tel"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    placeholder="Enter phone number"
-                    required
-                    className="mt-2"
+          {formLoading ? (
+            <div className="text-center py-12">
+              <p className="text-gray-600">Loading form...</p>
+            </div>
+          ) : !formTemplate ? (
+            <div className="text-center py-12">
+              <p className="text-gray-600 mb-4">Unable to load customer form</p>
+              <Button variant="secondary" onClick={onClose}>
+                Close
+              </Button>
+            </div>
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle>Customer Information</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  {/* Dynamic Form Fields */}
+                  <DynamicFormRenderer
+                    fields={formTemplate.fields}
+                    values={formData}
+                    onChange={handleFieldChange}
+                    errors={fieldErrors}
+                    disabled={loading}
                   />
-                </div>
 
-                {/* Address */}
-                <div>
-                  <Label htmlFor="address">Street Address</Label>
-                  <Input
-                    id="address"
-                    value={formData.address}
-                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                    placeholder="Enter street address"
-                    className="mt-2"
-                  />
-                </div>
+                  {/* Error Message */}
+                  {error && (
+                    <div className="bg-red-50 text-red-600 border border-red-200 p-3 rounded-lg text-sm">
+                      {error}
+                    </div>
+                  )}
 
-                {/* City, State, Zip */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div>
-                    <Label htmlFor="city">City</Label>
-                    <Input
-                      id="city"
-                      value={formData.city}
-                      onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                      placeholder="City"
-                      className="mt-2"
-                    />
+                  {/* Form Actions */}
+                  <div className="flex gap-3 pt-6">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={onClose}
+                      className="flex-1"
+                      disabled={loading}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={handleClearData}
+                      className="flex-1"
+                      disabled={loading}
+                    >
+                      Clear Data
+                    </Button>
+                    <Button
+                      type="submit"
+                      className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:shadow-lg transition-all duration-200 font-semibold"
+                      disabled={loading}
+                    >
+                      {loading ? 'Creating...' : 'Create Customer'}
+                    </Button>
                   </div>
-
-                  <div>
-                    <Label htmlFor="state">State</Label>
-                    <Input
-                      id="state"
-                      value={formData.state}
-                      onChange={(e) => setFormData({ ...formData, state: e.target.value })}
-                      placeholder="State"
-                      className="mt-2"
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="zipCode">Zip Code</Label>
-                    <Input
-                      id="zipCode"
-                      value={formData.zipCode}
-                      onChange={(e) => setFormData({ ...formData, zipCode: e.target.value })}
-                      placeholder="Zip code"
-                      className="mt-2"
-                    />
-                  </div>
-                </div>
-
-                {/* Error Message */}
-                {error && (
-                  <div className="bg-red-50 text-red-600 border border-red-200 p-3 rounded-lg text-sm">
-                    {error}
-                  </div>
-                )}
-
-                {/* Form Actions */}
-                <div className="flex gap-3 pt-6">
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    onClick={onClose}
-                    className="flex-1"
-                    disabled={loading}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    onClick={handleClearData}
-                    className="flex-1"
-                    disabled={loading}
-                  >
-                    Clear Data
-                  </Button>
-                  <Button
-                    type="submit"
-                    className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:shadow-lg transition-all duration-200 font-semibold"
-                    disabled={loading}
-                  >
-                    {loading ? 'Creating...' : 'Create Customer'}
-                  </Button>
-                </div>
-              </form>
-            </CardContent>
-          </Card>
+                </form>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
 

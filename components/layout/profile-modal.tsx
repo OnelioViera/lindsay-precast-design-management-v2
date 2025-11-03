@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
-import { X, CheckCircle } from 'lucide-react';
+import { X, CheckCircle, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,6 +12,7 @@ const roleDisplayNames: { [key: string]: string } = {
   designer: 'CAD Designer',
   manager: 'Project Manager',
   production: 'Production Specialist',
+  admin: 'Administrator',
   other: 'Other',
 };
 
@@ -28,10 +29,15 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
   const { data: session, update } = useSession();
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     role: 'designer',
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
   });
 
   // Update form data when modal opens or session changes
@@ -41,6 +47,9 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
         name: session.user.name || '',
         email: session.user.email || '',
         role: (session.user as any).role || 'designer',
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: '',
       });
       setMessage('');
     }
@@ -51,11 +60,35 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
     setLoading(true);
     setMessage('');
 
+    // Validate password change if fields are filled
+    if (formData.newPassword || formData.currentPassword) {
+      if (!formData.currentPassword) {
+        setMessage('Current password is required to change password');
+        setLoading(false);
+        return;
+      }
+      if (formData.newPassword !== formData.confirmPassword) {
+        setMessage('New passwords do not match');
+        setLoading(false);
+        return;
+      }
+      if (formData.newPassword.length < 6) {
+        setMessage('New password must be at least 6 characters');
+        setLoading(false);
+        return;
+      }
+    }
+
     try {
       const res = await fetch('/api/auth/profile', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          name: formData.name,
+          role: formData.role,
+          currentPassword: formData.currentPassword || undefined,
+          newPassword: formData.newPassword || undefined,
+        }),
       });
 
       const data = await res.json();
@@ -80,7 +113,7 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white border border-gray-400 shadow-xl max-w-md w-full">
+      <div className="bg-white border border-gray-400 shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b border-gray-400">
           <h2 className="text-xl font-bold text-gray-900">Edit Profile</h2>
           <button
@@ -127,9 +160,71 @@ export function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                 <SelectItem value="designer">CAD Designer</SelectItem>
                 <SelectItem value="manager">Project Manager</SelectItem>
                 <SelectItem value="production">Production Specialist</SelectItem>
+                <SelectItem value="admin">Administrator</SelectItem>
                 <SelectItem value="other">Other</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          {/* Password Change Section */}
+          <div className="border-t border-gray-300 pt-4 mt-4">
+            <h3 className="text-sm font-semibold text-gray-900 mb-3">Change Password (Optional)</h3>
+            
+            <div>
+              <Label htmlFor="currentPassword" className="text-sm font-medium text-gray-900">Current Password</Label>
+              <div className="relative mt-1">
+                <Input
+                  id="currentPassword"
+                  type={showPassword ? "text" : "password"}
+                  value={formData.currentPassword}
+                  onChange={(e) => setFormData({ ...formData, currentPassword: e.target.value })}
+                  placeholder="Enter current password"
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-800"
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+
+            <div className="mt-3">
+              <Label htmlFor="newPassword" className="text-sm font-medium text-gray-900">New Password</Label>
+              <div className="relative mt-1">
+                <Input
+                  id="newPassword"
+                  type={showNewPassword ? "text" : "password"}
+                  value={formData.newPassword}
+                  onChange={(e) => setFormData({ ...formData, newPassword: e.target.value })}
+                  placeholder="Enter new password"
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNewPassword(!showNewPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-800"
+                >
+                  {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+
+            <div className="mt-3">
+              <Label htmlFor="confirmPassword" className="text-sm font-medium text-gray-900">Confirm New Password</Label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                value={formData.confirmPassword}
+                onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                placeholder="Confirm new password"
+                className="mt-1"
+              />
+            </div>
+
+            <p className="text-xs text-gray-600 mt-2">Leave blank if you don't want to change your password</p>
           </div>
 
           {message && (

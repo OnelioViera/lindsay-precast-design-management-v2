@@ -10,12 +10,13 @@ import {
   BookOpen, 
   Factory,
   LogOut,
-  ChevronLeft
+  ChevronLeft,
+  Settings
 } from 'lucide-react';
-import { signOut } from 'next-auth/react';
+import { signOut, useSession } from 'next-auth/react';
 import { useSidebar } from '@/lib/sidebar-context';
 
-const menuItems = [
+const baseMenuItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { href: '/dashboard/projects', icon: FolderKanban, label: 'Projects' },
   { href: '/dashboard/customers', icon: Users, label: 'Customers' },
@@ -26,6 +27,13 @@ const menuItems = [
 export function Sidebar() {
   const pathname = usePathname();
   const { isCollapsed, toggleCollapse } = useSidebar();
+  const { data: session } = useSession();
+  
+  const isAdmin = (session?.user as any)?.role === 'admin';
+  
+  const menuItems = isAdmin 
+    ? [...baseMenuItems, { href: '/dashboard/admin', icon: Settings, label: 'Admin' }]
+    : baseMenuItems;
 
   return (
     <div className={cn(

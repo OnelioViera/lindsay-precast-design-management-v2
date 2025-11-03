@@ -103,6 +103,7 @@ export default function RegisterPage() {
                   <SelectItem value="designer">CAD Designer</SelectItem>
                   <SelectItem value="manager">Project Manager</SelectItem>
                   <SelectItem value="production">Production Specialist</SelectItem>
+                  <SelectItem value="admin">Administrator</SelectItem>
                   <SelectItem value="other">Other</SelectItem>
                 </SelectContent>
               </Select>

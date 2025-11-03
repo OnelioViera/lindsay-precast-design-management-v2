@@ -39,6 +39,11 @@ const CustomerSchema = new Schema({
     completedThisYear: { type: Number, default: 0 },
     recentProjectIds: [{ type: Schema.Types.ObjectId, ref: 'Project' }],
   },
+  // Store dynamic form data for reference and custom fields
+  dynamicFormData: {
+    type: Schema.Types.Mixed,
+    default: {},
+  },
 }, {
   timestamps: true,
 });

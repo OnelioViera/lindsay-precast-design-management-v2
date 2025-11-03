@@ -14,16 +14,27 @@ export const authOptions = {
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
+          console.log('❌ Missing credentials');
           return null;
         }
 
         try {
           await connectDB();
-          const user = await User.findOne({ 
-            email: (credentials.email as string).toLowerCase() 
-          });
+          const email = (credentials.email as string).toLowerCase();
+          console.log('🔐 Auth attempt for:', email);
+          
+          const user = await User.findOne({ email });
 
           if (!user) {
+            console.log('❌ User not found:', email);
+            return null;
+          }
+
+          console.log('✅ User found:', email, 'Role:', user.role);
+
+          // Verify password exists
+          if (!user.password) {
+            console.log('❌ User password not set:', email);
             return null;
           }
 
@@ -33,13 +44,19 @@ export const authOptions = {
           );
 
           if (!isPasswordValid) {
+            console.log('❌ Password mismatch for:', email);
+            console.log('   Password hash exists:', !!user.password);
+            console.log('   Password hash length:', user.password.length);
             return null;
           }
+
+          console.log('✅ Password valid for:', email);
 
           // Update last login
           user.lastLogin = new Date();
           await user.save();
 
+          console.log('✅ Login successful for:', email);
           return {
             id: user._id.toString(),
             email: user.email,
@@ -47,7 +64,12 @@ export const authOptions = {
             role: user.role,
           };
         } catch (error) {
-          console.error('Auth error:', error);
+          console.error('❌ Auth error:', error);
+          // Log detailed error for debugging
+          if (error instanceof Error) {
+            console.error('   Error message:', error.message);
+            console.error('   Error stack:', error.stack);
+          }
           return null;
         }
       }
