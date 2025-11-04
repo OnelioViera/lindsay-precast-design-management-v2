@@ -38,6 +38,7 @@ export const authOptions = {
 
           if (!user) {
             console.log('❌ User not found:', email);
+            console.log('   Database connected, but user does not exist');
             return null;
           }
 
@@ -56,8 +57,7 @@ export const authOptions = {
 
           if (!isPasswordValid) {
             console.log('❌ Password mismatch for:', email);
-            console.log('   Password hash exists:', !!user.password);
-            console.log('   Password hash length:', user.password.length);
+            console.log('   Provided password does not match stored hash');
             return null;
           }
 
@@ -79,7 +79,10 @@ export const authOptions = {
           // Log detailed error for debugging
           if (error instanceof Error) {
             console.error('   Error message:', error.message);
-            console.error('   Error stack:', error.stack);
+            console.error('   Error type:', error.name);
+            if (error.message.includes('getaddrinfo')) {
+              console.error('   → Database connection failed');
+            }
           }
           return null;
         }
