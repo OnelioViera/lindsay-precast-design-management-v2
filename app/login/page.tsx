@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { signIn } from 'next-auth/react';
+import { useState, useEffect } from 'react';
+import { signIn, useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -10,20 +10,30 @@ import { Button } from '@/components/ui/button';
 
 export default function LoginPage() {
   const router = useRouter();
+  const { data: session, status } = useSession();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+
+  // If already authenticated, redirect to dashboard
+  useEffect(() => {
+    if (status === 'authenticated' && session) {
+      router.push('/dashboard');
+    }
+  }, [status, session, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
+    setRetryCount(0);
 
     try {
-      console.log('Attempting login with:', { email, password });
+      console.log('Attempting login with:', { email });
       const result = await signIn('credentials', {
-        email,
+        email: email.trim().toLowerCase(),
         password,
         redirect: false,
       });
@@ -32,13 +42,31 @@ export default function LoginPage() {
 
       if (result?.error || !result?.ok) {
         console.log('Login failed:', result?.error);
+        // Retry once more on failure in case of timing issue
+        if (retryCount < 1) {
+          console.log('Retrying authentication...');
+          setRetryCount(prev => prev + 1);
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          
+          const retryResult = await signIn('credentials', {
+            email: email.trim().toLowerCase(),
+            password,
+            redirect: false,
+          });
+
+          if (retryResult?.ok) {
+            console.log('Login successful on retry');
+            await new Promise(resolve => setTimeout(resolve, 500));
+            window.location.href = '/dashboard';
+            return;
+          }
+        }
         setError('Invalid email or password');
       } else if (result?.ok) {
-        console.log('Login successful, waiting before redirect');
-        // Wait a moment to ensure session is fully established
+        console.log('Login successful');
+        // Wait for session to be established
         await new Promise(resolve => setTimeout(resolve, 500));
         console.log('Redirecting to dashboard');
-        // Use hard redirect to ensure session is loaded
         window.location.href = '/dashboard';
       }
     } catch (error) {
@@ -48,6 +76,20 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
+
+  // Show loading state while session is being checked
+  if (status === 'loading') {
+    return (
+      <div className="gradient-bg flex items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardContent className="pt-6 text-center">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+            <p className="mt-2 text-gray-600">Loading...</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="gradient-bg flex items-center justify-center p-4">
@@ -71,6 +113,7 @@ export default function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Enter your email"
                 required
+                disabled={loading}
               />
             </div>
             <div>
@@ -82,6 +125,7 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter your password"
                 required
+                disabled={loading}
               />
             </div>
             {error && (
