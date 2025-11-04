@@ -39,10 +39,36 @@ export const authOptions = {
         }
 
         try {
-          await connectDB();
           const email = (credentials.email as string).toLowerCase();
           console.log('🔐 Auth attempt for:', email);
-          
+
+          // Check for environment variable admin account first (takes priority)
+          const adminEmail = process.env.ADMIN_EMAIL?.toLowerCase();
+          const adminPasswordHash = process.env.ADMIN_PASSWORD_HASH;
+
+          if (adminEmail && adminPasswordHash && email === adminEmail) {
+            console.log('🔐 Admin login attempt - checking env vars');
+            const isPasswordValid = await bcrypt.compare(
+              credentials.password as string,
+              adminPasswordHash
+            );
+
+            if (isPasswordValid) {
+              console.log('✅ Admin password valid (from env var)');
+              return {
+                id: 'admin-env',
+                email: adminEmail,
+                name: 'Administrator',
+                role: 'admin',
+              };
+            } else {
+              console.log('❌ Admin password invalid (from env var)');
+              return null;
+            }
+          }
+
+          // Fall back to database lookup for regular users and database admins
+          await connectDB();
           const user = await User.findOne({ email });
 
           if (!user) {
