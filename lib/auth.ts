@@ -6,14 +6,23 @@ import bcrypt from 'bcryptjs';
 
 // Determine the base URL based on environment
 const getBaseUrl = () => {
+  // Explicit NEXTAUTH_URL takes priority
   if (process.env.NEXTAUTH_URL) {
+    console.log('Using NEXTAUTH_URL:', process.env.NEXTAUTH_URL);
     return process.env.NEXTAUTH_URL;
   }
+  // Vercel auto-provides VERCEL_URL
   if (process.env.VERCEL_URL) {
-    return `https://${process.env.VERCEL_URL}`;
+    const url = `https://${process.env.VERCEL_URL}`;
+    console.log('Using VERCEL_URL:', url);
+    return url;
   }
+  // Fallback to localhost
+  console.log('Using localhost fallback: http://localhost:3000');
   return 'http://localhost:3000';
 };
+
+const baseUrl = getBaseUrl();
 
 export const authOptions = {
   providers: [
@@ -130,7 +139,7 @@ export const authOptions = {
   } as const,
   secret: process.env.NEXTAUTH_SECRET,
   trustHost: true,
-  baseUrl: getBaseUrl(),
+  baseUrl: baseUrl,
   events: {
     async signOut() {
       // Session is being cleared by NextAuth
