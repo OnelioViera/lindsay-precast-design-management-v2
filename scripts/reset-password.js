@@ -1,19 +1,40 @@
 const { MongoClient } = require('mongodb');
 const bcrypt = require('bcryptjs');
+const fs = require('fs');
+const path = require('path');
 
 async function resetPassword() {
   const email = process.argv[2];
   const newPassword = process.argv[3];
-  const mongoUri = process.argv[4];
+  let mongoUri = process.argv[4];
 
   if (!email || !newPassword) {
-    console.error('❌ Usage: node scripts/reset-password.js <email> <newpassword> <mongoUri>');
-    console.error('Example: node scripts/reset-password.js user@example.com myNewPassword "mongodb+srv://..."');
+    console.error('❌ Usage: node scripts/reset-password.js <email> <newpassword> [mongoUri]');
+    console.error('Example: node scripts/reset-password.js user@example.com myNewPassword');
+    console.error('Note: MongoURI will be read from .env.local if not provided');
     process.exit(1);
   }
 
+  // If no MongoDB URI provided as argument, try to read from .env.local
   if (!mongoUri) {
-    console.error('❌ MongoDB URI not provided as third argument');
+    const envPath = path.join(__dirname, '..', '.env.local');
+    if (fs.existsSync(envPath)) {
+      const envContent = fs.readFileSync(envPath, 'utf8');
+      envContent.split('\n').forEach(line => {
+        if (line.trim() && !line.startsWith('#')) {
+          const [key, ...valueParts] = line.split('=');
+          const trimmedKey = key.trim();
+          const trimmedValue = valueParts.join('=').trim();
+          if (trimmedKey === 'MONGODB_URI') {
+            mongoUri = trimmedValue;
+          }
+        }
+      });
+    }
+  }
+
+  if (!mongoUri) {
+    console.error('❌ MongoDB URI not found in .env.local or provided as argument');
     process.exit(1);
   }
 
