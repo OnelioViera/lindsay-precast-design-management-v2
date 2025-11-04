@@ -128,6 +128,12 @@ export const authOptions = {
   secret: process.env.NEXTAUTH_SECRET,
   trustHost: true,
   baseUrl: getBaseUrl(),
+  events: {
+    async signOut() {
+      // Session is being cleared by NextAuth
+      // Client will handle redirect to login page
+    },
+  },
 };
 
 // Create auth instance for NextAuth v5

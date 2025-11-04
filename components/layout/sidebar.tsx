@@ -104,7 +104,7 @@ export function Sidebar() {
 
       <div className="p-4 border-t border-gray-400">
         <button
-          onClick={() => signOut({ callbackUrl: '/' })}
+          onClick={() => signOut({ callbackUrl: '/login', redirect: true })}
           className={cn(
             'flex items-center gap-3 px-4 py-3 w-full text-gray-700 hover:bg-red-200 hover:text-red-800 transition-all duration-200 relative group border border-gray-400 hover:border-red-400',
             isCollapsed && 'justify-center px-3'
