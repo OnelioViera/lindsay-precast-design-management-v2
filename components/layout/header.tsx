@@ -27,7 +27,7 @@ export function Header() {
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const { isCollapsed } = useSidebar();
-  const { notifications, unreadCount, markAsRead, deleteNotification, markAllAsRead } =
+  const { notifications, unreadCount, markAsRead, deleteNotification, markAllAsRead, fetchNotifications } =
     useNotifications();
   const { addToast } = useToast();
 
@@ -83,14 +83,23 @@ export function Header() {
                   {/* Header */}
                   <div className="p-4 border-b border-gray-300 flex items-center justify-between">
                     <h3 className="font-semibold text-gray-900">Notifications</h3>
-                    {unreadCount > 0 && (
+                    <div className="flex gap-2">
                       <button
-                        onClick={markAllAsRead}
-                        className="text-xs text-blue-600 hover:text-blue-800 font-semibold"
+                        onClick={() => fetchNotifications()}
+                        className="text-xs text-gray-600 hover:text-gray-800 font-semibold p-1"
+                        title="Refresh notifications"
                       >
-                        Mark all as read
+                        🔄
                       </button>
-                    )}
+                      {unreadCount > 0 && (
+                        <button
+                          onClick={markAllAsRead}
+                          className="text-xs text-blue-600 hover:text-blue-800 font-semibold"
+                        >
+                          Mark all as read
+                        </button>
+                      )}
+                    </div>
                   </div>
 
                   {/* Notifications List */}
