@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { useSession } from 'next-auth/react';
 
 export interface Notification {
   _id: string;
@@ -26,11 +27,18 @@ interface NotificationContextType {
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
 
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
+  const { data: session, status } = useSession();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
   const fetchNotifications = useCallback(async () => {
+    // Only fetch if user is authenticated
+    if (status !== 'authenticated') {
+      setLoading(false);
+      return;
+    }
+
     try {
       const res = await fetch('/api/notifications?limit=10');
       const data = await res.json();
@@ -45,7 +53,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [status]);
 
   const markAsRead = useCallback(async (id: string) => {
     try {
