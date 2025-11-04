@@ -4,6 +4,17 @@ import { connectDB } from './db';
 import User from '@/models/User';
 import bcrypt from 'bcryptjs';
 
+// Determine the base URL based on environment
+const getBaseUrl = () => {
+  if (process.env.NEXTAUTH_URL) {
+    return process.env.NEXTAUTH_URL;
+  }
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`;
+  }
+  return 'http://localhost:3000';
+};
+
 export const authOptions = {
   providers: [
     CredentialsProvider({
@@ -116,6 +127,7 @@ export const authOptions = {
   } as const,
   secret: process.env.NEXTAUTH_SECRET,
   trustHost: true,
+  baseUrl: getBaseUrl(),
 };
 
 // Create auth instance for NextAuth v5
