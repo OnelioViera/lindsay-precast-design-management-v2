@@ -42,11 +42,12 @@ export default function LoginPage() {
 
       if (result?.error || !result?.ok) {
         console.log('Login failed:', result?.error);
-        // Retry once more on failure in case of timing issue
+        // Retry with longer delay to allow proper session cleanup
         if (retryCount < 1) {
-          console.log('Retrying authentication...');
+          console.log('Retrying authentication after delay...');
           setRetryCount(prev => prev + 1);
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          // Wait longer to ensure session is fully cleared
+          await new Promise(resolve => setTimeout(resolve, 2000));
           
           const retryResult = await signIn('credentials', {
             email: email.trim().toLowerCase(),
@@ -54,14 +55,20 @@ export default function LoginPage() {
             redirect: false,
           });
 
+          console.log('Retry result:', retryResult);
+
           if (retryResult?.ok) {
             console.log('Login successful on retry');
             await new Promise(resolve => setTimeout(resolve, 500));
             window.location.href = '/dashboard';
             return;
+          } else {
+            console.log('Retry failed:', retryResult?.error);
+            setError('Invalid email or password');
           }
+        } else {
+          setError('Invalid email or password');
         }
-        setError('Invalid email or password');
       } else if (result?.ok) {
         console.log('Login successful');
         // Wait for session to be established
@@ -114,6 +121,7 @@ export default function LoginPage() {
                 placeholder="Enter your email"
                 required
                 disabled={loading}
+                autoComplete="email"
               />
             </div>
             <div>
@@ -126,11 +134,13 @@ export default function LoginPage() {
                 placeholder="Enter your password"
                 required
                 disabled={loading}
+                autoComplete="current-password"
               />
             </div>
             {error && (
-              <div className="bg-red-100 text-red-800 p-3 text-sm border border-red-400">
-                {error}
+              <div className="bg-red-100 text-red-800 p-3 text-sm border border-red-400 rounded">
+                <p className="font-semibold">{error}</p>
+                <p className="text-xs mt-1">If this persists, try clearing your browser cache or using incognito mode.</p>
               </div>
             )}
             <Button
