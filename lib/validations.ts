@@ -38,7 +38,7 @@ export const projectSchema = z.object({
 export const customerSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
   contactInfo: z.object({
-    email: z.string().email('Invalid email address').optional(),
+    email: z.string().email().or(z.literal('')).optional(),
     phone: z.string().regex(/^\(\d{3}\) \d{3}-\d{4}$/, 'Invalid phone format (xxx) xxx-xxxx').optional(),
     address: z.object({
       street: z.string().optional(),
@@ -80,5 +80,6 @@ export const timeEntrySchema = z.object({
   action: z.enum(['start', 'stop']),
   notes: z.string().optional(),
 });
+
 
 
