@@ -66,8 +66,7 @@ const FormTemplateSchema = new Schema({
     required: true,
   },
   updatedBy: {
-    type: Schema.Types.ObjectId,
-    ref: 'User',
+    type: Schema.Types.Mixed,
   },
 }, {
   timestamps: true,

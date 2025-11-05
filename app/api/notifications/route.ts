@@ -37,6 +37,19 @@ export async function GET(req: NextRequest) {
 
     console.log('📬 GET /api/notifications for user:', userId);
 
+    // Handle "admin-env" case - env-based admin doesn't have notifications
+    if (userId === 'admin-env') {
+      console.log('  📬 Admin (env-based) - returning empty notifications');
+      return NextResponse.json(
+        {
+          success: true,
+          data: [],
+          unreadCount: 0,
+        },
+        { status: 200 }
+      );
+    }
+
     try {
       await connectDB();
     } catch (dbError) {

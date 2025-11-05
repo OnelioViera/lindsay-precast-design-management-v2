@@ -66,7 +66,7 @@ export async function PATCH(
     const template = await FormTemplate.findByIdAndUpdate(
       params.id,
       updateData,
-      { new: true, runValidators: true }
+      { new: true, runValidators: false }
     ).catch((err) => {
       console.error('❌ Update error:', err);
       throw err;
