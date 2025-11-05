@@ -1,20 +1,44 @@
 'use client';
 
+import React, { useState } from 'react';
+import { useSession, signOut } from 'next-auth/react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { 
-  LayoutDashboard, 
-  FolderKanban, 
-  Users, 
-  BookOpen, 
+import {
+  LayoutDashboard,
+  FolderKanban,
+  Users,
+  BookOpen,
   Factory,
-  LogOut,
+  Settings,
   ChevronLeft,
-  Settings
+  ChevronRight,
+  LogOut,
 } from 'lucide-react';
-import { signOut, useSession } from 'next-auth/react';
 import { useSidebar } from '@/lib/sidebar-context';
+
+// Helper function to get the correct base URL
+const getRedirectUrl = (path: string) => {
+  if (typeof window === 'undefined') {
+    return path;
+  }
+  
+  const origin = window.location.origin;
+  
+  // On Vercel, window.location.origin might be cached as localhost
+  // Check if we're on a Vercel domain and use that instead
+  if (origin.includes('localhost')) {
+    // Try to get hostname from the current page URL
+    const hostname = window.location.hostname;
+    if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
+      // We're on Vercel, construct proper URL
+      return `https://${window.location.hostname}${path}`;
+    }
+  }
+  
+  return `${origin}${path}`;
+};
 
 const baseMenuItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -106,7 +130,7 @@ export function Sidebar() {
         <button
           onClick={() => {
             signOut({
-              callbackUrl: `${window.location.origin}/login`,
+              callbackUrl: getRedirectUrl('/login'),
               redirect: true,
             });
           }}
