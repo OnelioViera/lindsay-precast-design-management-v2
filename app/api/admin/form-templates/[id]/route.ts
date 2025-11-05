@@ -51,16 +51,17 @@ export async function PATCH(
     const body = await req.json();
     await connectDB();
 
+    const updateData = {
+      name: body.name,
+      description: body.description,
+      fields: body.fields,
+      isActive: body.isActive,
+      updatedBy: (session.user as any).id,
+    };
+
     const template = await FormTemplate.findByIdAndUpdate(
       params.id,
-      {
-        name: body.name,
-        description: body.description,
-        fields: body.fields,
-        isActive: body.isActive,
-        updatedBy: (session.user as any).id,
-        $inc: { version: 1 },
-      },
+      updateData,
       { new: true, runValidators: true }
     );
 
