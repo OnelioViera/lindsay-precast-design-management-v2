@@ -46,8 +46,11 @@ export const authOptions = {
           const adminEmail = process.env.ADMIN_EMAIL?.toLowerCase();
           const adminPasswordHash = process.env.ADMIN_PASSWORD_HASH;
 
+          console.log('🔐 Checking env vars - ADMIN_EMAIL:', adminEmail, 'Has ADMIN_PASSWORD_HASH:', !!adminPasswordHash);
+
           if (adminEmail && adminPasswordHash && email === adminEmail) {
             console.log('🔐 Admin login attempt - checking env vars');
+            console.log('   Attempting bcrypt.compare with provided password');
             const isPasswordValid = await bcrypt.compare(
               credentials.password as string,
               adminPasswordHash
@@ -63,8 +66,12 @@ export const authOptions = {
               };
             } else {
               console.log('❌ Admin password invalid (from env var)');
-              return null;
+              console.log('   Password provided does not match ADMIN_PASSWORD_HASH');
+              // Don't return null yet - fall through to database check
+              // This allows database admins to login even if env var password is wrong
             }
+          } else if (adminEmail && !adminPasswordHash) {
+            console.log('⚠️  ADMIN_EMAIL set but ADMIN_PASSWORD_HASH is missing');
           }
 
           // Fall back to database lookup for regular users and database admins
@@ -153,6 +160,7 @@ export const authOptions = {
         (session.user as any).id = token.id;
         session.user.name = token.name;
         (session.user as any).role = token.role;
+        console.log('📋 Session created for user:', session.user.email, 'Role:', (session.user as any).role);
       }
       return session;
     }
