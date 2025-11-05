@@ -8,13 +8,24 @@ export async function GET(req: NextRequest) {
   try {
     const session = await auth();
     if (!session) {
+      console.log('📬 GET /api/notifications - No session');
       return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
     }
 
     const userId = (session.user as any).id;
+    if (!userId) {
+      console.log('📬 GET /api/notifications - No userId in session');
+      return NextResponse.json({ success: false, message: 'Invalid session' }, { status: 401 });
+    }
+
     console.log('📬 GET /api/notifications for user:', userId);
 
-    await connectDB();
+    try {
+      await connectDB();
+    } catch (dbError) {
+      console.error('❌ Database connection error:', dbError);
+      return NextResponse.json({ success: false, message: 'Database error' }, { status: 500 });
+    }
 
     const { searchParams } = new URL(req.url);
     const limit = parseInt(searchParams.get('limit') || '10');
@@ -42,6 +53,10 @@ export async function GET(req: NextRequest) {
     });
   } catch (error) {
     console.error('❌ Get notifications error:', error);
+    if (error instanceof Error) {
+      console.error('   Message:', error.message);
+      console.error('   Stack:', error.stack);
+    }
     return NextResponse.json(
       { success: false, message: 'Internal server error' },
       { status: 500 }
