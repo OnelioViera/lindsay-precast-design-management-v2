@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
 
     // Check if customer already exists
     const existingCustomer = await Customer.findOne({
-      'contactInfo.email': validatedData.contactInfo.email.toLowerCase(),
+      'contactInfo.email': validatedData.contactInfo?.email?.toLowerCase?.() || null,
     });
 
     if (existingCustomer) {
@@ -87,7 +87,7 @@ export async function POST(req: NextRequest) {
       ...validatedData,
       contactInfo: {
         ...validatedData.contactInfo,
-        email: validatedData.contactInfo.email.toLowerCase(),
+        email: validatedData.contactInfo?.email?.toLowerCase?.() || '',
       },
       projectHistory: {
         totalProjects: 0,
@@ -121,5 +121,6 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
 
 
