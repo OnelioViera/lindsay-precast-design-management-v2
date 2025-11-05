@@ -107,10 +107,10 @@ export function Sidebar() {
       <div className="p-4 border-t border-gray-400">
         <button
           onClick={() => {
-            console.log('🔐 SignOut clicked - redirecting to /login');
-            signOut({
-              callbackUrl: '/login',
-              redirect: true,
+            console.log('🔐 SignOut clicked');
+            signOut({ redirect: false }).then(() => {
+              // After signOut completes, redirect to login
+              window.location.href = '/login';
             });
           }}
           className={cn(
