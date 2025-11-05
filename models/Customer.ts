@@ -9,14 +9,15 @@ const CustomerSchema = new Schema({
   contactInfo: {
     email: {
       type: String,
-      required: [true, 'Email is required'],
+      required: false,
       unique: true,
+      sparse: true,
       lowercase: true,
       trim: true,
     },
     phone: {
       type: String,
-      required: [true, 'Phone is required'],
+      required: false,
       trim: true,
     },
     address: {
