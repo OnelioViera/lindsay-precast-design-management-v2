@@ -166,8 +166,13 @@ export const authOptions = {
     },
     async redirect({ url, baseUrl }: { url: string; baseUrl: string }) {
       // Ensures we always redirect to the correct domain
-      // For signOut, url will be the callbackUrl from signOut()
       console.log('🔄 Redirect callback - url:', url, 'baseUrl:', baseUrl);
+      
+      // Always ensure we're redirecting to our base URL
+      // This catches signOut redirects and other redirects
+      if (url === '/login' || url === 'login') {
+        return `${baseUrl}/login`;
+      }
       
       // If url starts with /, it's a relative URL - make it absolute with baseUrl
       if (url.startsWith('/')) {
@@ -186,7 +191,6 @@ export const authOptions = {
   pages: {
     signIn: '/login',
     error: '/login',
-    signOut: '/login',
   },
   session: {
     strategy: 'jwt',
@@ -197,8 +201,9 @@ export const authOptions = {
   baseUrl: baseUrl,
   events: {
     async signOut() {
+      console.log('🔐 User signed out');
       // Session is being cleared by NextAuth
-      // Client will handle redirect to login page
+      // Redirect is handled by redirect callback above
     },
   },
 };
