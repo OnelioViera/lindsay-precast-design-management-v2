@@ -131,8 +131,9 @@ export const authOptions = {
         token.id = user.id;
         token.name = user.name;
         token.role = (user as any).role;
-      } else if (token.id) {
+      } else if (token.id && token.id !== 'admin-env') {
         // On subsequent calls (session refresh), fetch fresh data from database
+        // BUT: Skip database lookup for admin-env token (env var based admin)
         try {
           await connectDB();
           const dbUser = await User.findById(token.id);
@@ -144,6 +145,7 @@ export const authOptions = {
           console.error('Error fetching user in JWT callback:', error);
         }
       }
+      // For admin-env, keep the existing token data (don't modify it)
       return token;
     },
     async session({ session, token }: { session: any; token: any }) {
