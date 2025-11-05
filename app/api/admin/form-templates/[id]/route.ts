@@ -49,6 +49,8 @@ export async function PATCH(
     }
 
     const body = await req.json();
+    console.log('📝 PATCH request body:', JSON.stringify(body, null, 2));
+    
     await connectDB();
 
     const updateData = {
@@ -59,11 +61,16 @@ export async function PATCH(
       updatedBy: (session.user as any).id,
     };
 
+    console.log('🔄 Updating form template with:', JSON.stringify(updateData, null, 2));
+
     const template = await FormTemplate.findByIdAndUpdate(
       params.id,
       updateData,
       { new: true, runValidators: true }
-    );
+    ).catch((err) => {
+      console.error('❌ Update error:', err);
+      throw err;
+    });
 
     if (!template) {
       return NextResponse.json(
@@ -71,6 +78,8 @@ export async function PATCH(
         { status: 404 }
       );
     }
+
+    console.log('✅ Form template updated successfully');
 
     // Create notification for all users
     try {
@@ -120,9 +129,13 @@ export async function PATCH(
       data: template,
     });
   } catch (error) {
-    console.error('Update form template error:', error);
+    console.error('❌ Update form template error:', error);
+    if (error instanceof Error) {
+      console.error('   Error message:', error.message);
+      console.error('   Error stack:', error.stack);
+    }
     return NextResponse.json(
-      { success: false, message: 'Internal server error' },
+      { success: false, message: 'Internal server error', error: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }
