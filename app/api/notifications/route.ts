@@ -3,6 +3,9 @@ import { auth } from '@/lib/auth';
 import { connectDB } from '@/lib/db';
 import Notification from '@/models/Notification';
 
+// Mark this route as dynamic since it requires authentication
+export const dynamic = 'force-dynamic';
+
 // GET /api/notifications
 export async function GET(req: NextRequest) {
   try {

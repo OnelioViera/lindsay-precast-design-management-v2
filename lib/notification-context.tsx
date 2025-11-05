@@ -47,6 +47,14 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         setNotifications(data.data);
         setUnreadCount(data.unreadCount);
         console.log('📬 Notifications fetched:', data.data.length, 'unread:', data.unreadCount);
+      } else if (res.status === 401) {
+        // Unauthorized - session may have expired
+        console.log('📬 Notifications fetch returned 401 - session may have expired');
+        setNotifications([]);
+        setUnreadCount(0);
+      } else {
+        // 500 or other errors - log but don't spam console
+        console.warn('📬 Notifications API error:', res.status, data.message);
       }
     } catch (error) {
       console.error('Failed to fetch notifications:', error);
