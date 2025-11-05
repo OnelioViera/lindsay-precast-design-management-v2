@@ -163,7 +163,25 @@ export const authOptions = {
         console.log('📋 Session created for user:', session.user.email, 'Role:', (session.user as any).role);
       }
       return session;
-    }
+    },
+    async redirect({ url, baseUrl }: { url: string; baseUrl: string }) {
+      // Ensures we always redirect to the correct domain
+      // For signOut, url will be the callbackUrl from signOut()
+      console.log('🔄 Redirect callback - url:', url, 'baseUrl:', baseUrl);
+      
+      // If url starts with /, it's a relative URL - make it absolute with baseUrl
+      if (url.startsWith('/')) {
+        return `${baseUrl}${url}`;
+      }
+      
+      // If url starts with our baseUrl, it's already correct
+      if (url.startsWith(baseUrl)) {
+        return url;
+      }
+      
+      // Default to baseUrl for security
+      return baseUrl;
+    },
   },
   pages: {
     signIn: '/login',

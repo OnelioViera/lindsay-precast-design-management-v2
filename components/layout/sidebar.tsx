@@ -18,28 +18,6 @@ import {
 } from 'lucide-react';
 import { useSidebar } from '@/lib/sidebar-context';
 
-// Helper function to get the correct base URL
-const getRedirectUrl = (path: string) => {
-  if (typeof window === 'undefined') {
-    return path;
-  }
-  
-  const origin = window.location.origin;
-  
-  // On Vercel, window.location.origin might be cached as localhost
-  // Check if we're on a Vercel domain and use that instead
-  if (origin.includes('localhost')) {
-    // Try to get hostname from the current page URL
-    const hostname = window.location.hostname;
-    if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
-      // We're on Vercel, construct proper URL
-      return `https://${window.location.hostname}${path}`;
-    }
-  }
-  
-  return `${origin}${path}`;
-};
-
 const baseMenuItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { href: '/dashboard/projects', icon: FolderKanban, label: 'Projects' },
@@ -130,7 +108,7 @@ export function Sidebar() {
         <button
           onClick={() => {
             signOut({
-              callbackUrl: getRedirectUrl('/login'),
+              callbackUrl: '/login',
               redirect: true,
             });
           }}

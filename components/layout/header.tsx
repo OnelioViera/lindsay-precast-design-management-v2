@@ -47,8 +47,8 @@ export function Header() {
     <>
       <header
         className={cn(
-          'bg-gray-100 shadow-sm border-b border-gray-400 px-8 py-4 fixed top-0 z-30 transition-all duration-300',
-          isCollapsed ? 'right-0 left-20' : 'right-0 left-64'
+        'bg-gray-100 shadow-sm border-b border-gray-400 px-8 py-4 fixed top-0 z-30 transition-all duration-300',
+        isCollapsed ? 'right-0 left-20' : 'right-0 left-64'
         )}
       >
         <div className="flex items-center justify-between">
@@ -69,13 +69,13 @@ export function Header() {
                 className="relative px-3 py-2 text-sm"
                 onClick={() => setShowNotifications(!showNotifications)}
               >
-                <Bell className="h-5 w-5" />
+              <Bell className="h-5 w-5" />
                 {unreadCount > 0 && (
                   <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-600 text-xs text-white flex items-center justify-center border border-red-900 font-bold">
                     {unreadCount > 9 ? '9+' : unreadCount}
-                  </span>
+              </span>
                 )}
-              </Button>
+            </Button>
 
               {/* Notifications Dropdown */}
               {showNotifications && (
